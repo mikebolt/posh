@@ -3,32 +3,6 @@
 #include <unistd.h>
 #include "posh.h"
 
-/*
-#define POSH_ALLOC_SIZE 64
-
-typedef struct POSHstring {
-   char *base;
-   size_t length;
-   size_t allocated;
-} POSHstring;
-
-typedef struct POSHlistNode {
-   POSHstring string;
-   struct POSHlistNode *next;
-} POSHlistNode;
-
-typedef struct POSHlist {
-   POSHlistNode *head;
-   POSHlistNode *tail;
-} POSHlist;
-
-typedef struct POSHparser {
-   POSHlist list;
-   int parenthesesLevel;
-   char last;
-   char commentLine;
-} POSHparser;
-*/
 
 int main(int argc, char **argv) {
    POSHparser parser;
