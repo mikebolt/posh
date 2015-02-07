@@ -7,12 +7,6 @@
 
 
 int main(int argc, char **argv) {
-   POSHparser parser;
-   char **array;
-   char *ptr;
-   char c;
-   int pid;
-   int status;
    int openedFD, destFD;
    
    if (argc != 4) {
@@ -33,30 +27,12 @@ int main(int argc, char **argv) {
       exit(1);
    }
 
-   parser = POSHmakeParser();
+   POSHrunCommand(argv[3]);
 
-   ptr = argv[3];
-   while (c = *ptr++) {
-      POSHsubmitCharacter(&parser, c);
+   if (close(openedFD) == -1) {
+      perror("close");
+      exit(1);
    }
-
-   array = POSHlistToStringArray(&parser.list);
-
-   if (*array) {
-      pid = fork();
-      if (pid) {
-         close(openedFD);
-         wait(&status);
-      }
-      else {
-         execvp(array[0], array);
-         perror("execvp");
-         exit(1);
-      }
-   }
-
-   free(array);
-   POSHfreeParser(parser);
 
    return 0;
 }

@@ -1,3 +1,6 @@
+#ifndef POSH_HEADER
+#define POSH_HEADER
+
 #define YES 1
 #define NO 0
 
@@ -23,7 +26,6 @@ typedef struct POSHparser {
    POSHlist list;
    int parenthesesLevel;
    char last;
-   char commentLine;
 } POSHparser;
 
 
@@ -40,3 +42,7 @@ void POSHfreeList(POSHlist *list);
 POSHparser POSHmakeParser();
 void POSHfreeParser(POSHparser);
 void POSHsubmitCharacter(POSHparser *parser, char c);
+
+void POSHrunCommand(char *command);
+
+#endif

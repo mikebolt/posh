@@ -4,8 +4,6 @@
 #include "posh.h"
 
 /*
-#define POSH_ALLOC_SIZE 64
-
 typedef struct POSHstring {
    char *base;
    size_t length;
@@ -46,11 +44,6 @@ POSHlist POSHmakeList() {
    list.tail = NULL;
 
    return list;
-}
-
-char *POSHgetStringValue(POSHstring *string) {
-   string->base[string->length] = 0;
-   return string->base;
 }
 
 char **POSHlistToStringArray(POSHlist *list) {
@@ -94,15 +87,11 @@ void POSHfreeList(POSHlist *list) {
 }
 
 POSHparser POSHmakeParser() {
-   POSHparser parser = {};
+   POSHparser parser;
 
-   /*
    parser.list = POSHmakeList();
    parser.parenthesesLevel = 0;
    parser.last = 0;
-   parser.escaped = NO;
-   parser.commentLine = NO;
-   */
 
    return parser;
 }
@@ -111,12 +100,15 @@ void POSHfreeParser(POSHparser parser) {
    POSHfreeList(&parser.list);
 }
 
-/* TODO: make sense of all of this */
+/* TODO: This parser has some strange behavior. I'm meaning to rewrite it as
+ * a recursive descent parser using a line buffer. In the meantime this
+ * mostly works. */
 void POSHsubmitCharacter(POSHparser *parser, char c) {
    POSHlistNode *newNode;
 
    if (c == '(') {
       if (parser->last == ' ' && parser->parenthesesLevel == 0) {
+         /* Start a new string */
          newNode = (POSHlistNode *) malloc(sizeof(POSHlistNode));
          *newNode = POSHmakeListNode();
          parser->list.tail->next = newNode;
@@ -138,6 +130,7 @@ void POSHsubmitCharacter(POSHparser *parser, char c) {
    }
    else if (c != ' ' || parser->parenthesesLevel > 0) {
       if (!parser->list.head) {
+         /* If the list is not yet initialized, initialize it. */
          newNode = (POSHlistNode *) malloc(sizeof(POSHlistNode));
          *newNode = POSHmakeListNode();
          parser->list.head = parser->list.tail = newNode;
@@ -186,4 +179,41 @@ void POSHappendCharToString(POSHstring *string, char toAppend) {
    }
 
    string->base[string->length++] = toAppend;
+}
+
+/* Note: calling POSHappendToString or POSHappendCharToString after calling
+ * POSHgetStringValue invalidates the string returned by POSHgetStringValue. */
+char *POSHgetStringValue(POSHstring *string) {
+   string->base[string->length] = 0;
+   return string->base;
+}
+
+void POSHrunCommand(char *command) {
+   POSHparser parser;
+   char **array;
+   char c;
+   int pid, status;
+
+   parser = POSHmakeParser();
+
+   while (c = *command++) {
+      POSHsubmitCharacter(&parser, c);
+   }
+
+   array = POSHlistToStringArray(&parser.list);
+
+   if (*array) {
+      pid = fork();
+      if (pid) {
+         wait(&status);
+      }
+      else {
+         execvp(array[0], array);
+         perror("execvp");
+         exit(1);
+      }
+   }
+
+   free(array);
+   POSHfreeParser(parser);
 }
