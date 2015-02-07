@@ -1,0 +1,101 @@
+posh is a modular shell. It uses separate processes to perform the different
+functions of the shell.
+
+The core of posh is the main shell program named 'posh'. This program simply
+reads command lines one after the other and prints a prompt. Commands are
+executed one after the other, until an empty command is encountered.
+
+A command is just a list of strings. posh has a special syntax for parsing lists
+of strings. It would be best to give an example: the input
+
+   asdf jkl; (abc def) (foo (bar))
+
+is parsed as the four strings:
+"asdf"
+"jkl;"
+"abc def"
+"foo (bar)"
+
+The point of the grouped parentheses is to escape the spaces passed as part
+of the command list of a sub-command. Let me explain that. Like bash, the first
+string in the command is used as the name of the program to execute. The
+following strings in the command are passed as arguments. Most posh processes
+expect one of their arguments to be an entire command. This enables each
+process to do something to its execution environment, like duplicate a file
+descriptor, then start up a child process by interpreting that command
+argument.
+
+Here is a list of the available processes:
+
+posh
+This is the main shell program. It expects no arguments.
+
+dup
+Usage: dup source dest command
+dup redirects I/O by calling dup2(), so that the file descriptor dest refers
+to the same file descriptor to which source refers. The following example prints
+"Hello, world!" on stderr:
+
+dup 2 1 (echo Hello, world!)
+
+
+read
+Usage: read file fd command
+read opens a file for reading on the given file descriptor. The common use is
+to open a file for reading on stdin. Example:
+
+read file 0 cat
+
+
+write
+Usage: write file fd command
+write opens (or creates) a file for writing on the given file descriptor.
+Example:
+
+write file 1 (echo Hello, world!)
+
+
+pipe
+Usage: pipe writePipe readPipe writeCommand readCommand
+pipe creates a pipe between two processes. One process gets the write end of
+the pipe, and the other process gets the read end. By assigning the read end to
+file descriptor 0 and the write end to file descriptor 1, we can mimic the behavior of pipes in bash. The following example prints "Hello, world!" on stderr:
+
+dup 2 1 (pipe 1 0 (echo Hello, world!) cat)
+
+
+setenv
+Usage: setenv variable value command
+setenv sets an environment variable in the child process.
+
+unsetenv
+Usage: unsetenv variable command
+unsetenv removes the value of an environment variable in the child process.
+
+
+clearenv
+Usage: clearenv command
+clearenv clears the entire environment for the child process.
+
+
+seq
+Usage: seq (commands)
+This process executes each of its arguments as a command, in order. Example:
+
+seq (echo Hello,) (echo world!)
+
+
+sub
+Think of sub as a minimal subshell. Its purpose is to allow for command
+substitution. The following example is equivalent to 'ls `pwd`' in bash:
+
+pipe 1 0 (seq (concat (ls )) pwd) sub
+
+sub simply runs one command line from stdin without printing any prompt. The
+concat program is provided for convenience.
+
+
+Compiling:
+To compile the posh suite, simply run make. You will want to put the posh/bin
+directory in your PATH, otherwise all posh programs have to be referred to
+by prefixing them with './'.
